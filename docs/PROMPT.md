@@ -57,11 +57,10 @@ Acceptance: no article in the feed opens to a paywall prompt, and no ad ever ren
   - has repetitive, template-like text
   - shows leftover AI phrasing ("As an AI language model", "In conclusion, it's important to note")
   - carries C2PA or IPTC "AI-generated" metadata on its images
-- **Optional:** an LLM check (for example the Claude API) for borderline cases. It is off by default because it needs an API key and costs money.
 - Every hidden article can be viewed in a "Filtered (n)" drawer, so the user can report false positives. Those reports feed back into the filter.
 
 ### 3.5 Social highlights: 15 items a day
-*This needs a decision (see §5).* Meta no longer lets outside apps read a personal Instagram or Facebook feed (the Instagram Basic Display API was shut down on 4 Dec 2024). Scraping the feed with the user's login breaks Meta's terms and can get the account banned. Possible approaches:
+*Decided: option C (Bluesky + Mastodon).* Meta no longer lets outside apps read a personal Instagram or Facebook feed (the Instagram Basic Display API was shut down on 4 Dec 2024). Scraping the feed with the user's login breaks Meta's terms and can get the account banned. Possible approaches:
 - **A. Curated public accounts.** The user lists public Instagram/Facebook accounts or post URLs. Posts load through Meta's oEmbed endpoint. This needs a Meta developer app token.
 - **B. Business/Creator Graph API.** This only works if the user's own account is a Business or Creator account, and it only shows that account's own media, not their feed.
 - **C. Open networks.** Use Bluesky, Mastodon, Reddit and similar networks, whose APIs support reading the user's own feed with their login.
@@ -84,16 +83,16 @@ Under any option: pick the 15 best image or short-video posts a day (ranked with
 - Settings, `user_profile.md` and the Filtered drawer do not use up time.
 
 ## 4. Technical constraints
-- Architecture: MVVM, Hilt, Room (articles, interest scores), DataStore, WorkManager, OkHttp/Retrofit, Coil, Media3.
+- Architecture: a pure-Kotlin `core` module holds all the logic and is unit-tested on the JVM. The `app` module is Jetpack Compose with manual dependency wiring, small atomic JSON stores, WorkManager, OkHttp, Coil and Media3. A few small JSON documents didn't justify Room or Hilt.
 - Privacy: no analytics SDKs, no ad SDKs, and all personalization stays on the device.
 - Tests: unit tests for the paywall detector, the clickbait classifier rules, interest scoring and timer logic. Include a UI test for the lockout.
 - CI: a GitHub Actions workflow that builds a debug APK and runs the tests.
 
-## 5. Open decisions
-1. Which option for social content: A, B, C, or a mix?
-2. Should the optional LLM filter be included? It needs an API key.
-3. Should the 15 minutes be one shared budget, or split (for example 12 minutes of news and 3 of social)?
-4. Keep the name QuarterHour?
+## 5. Decisions (2026-09-30)
+1. Social content: **option C**, Bluesky (app password) and Mastodon (OAuth).
+2. LLM filter: **not included**. Filtering is rule-based and runs entirely on the device.
+3. Time budget: **one shared 15 minutes** for news and social.
+4. Name: **QuarterHour**.
 
 ## 6. Out of scope
 - Paywall bypass techniques: archive mirrors, pretending to be a search crawler, script-blocking tricks, cookie resets.

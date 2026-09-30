@@ -35,6 +35,8 @@ data class FilteredItem(
     val reason: FilterReason,
     val details: List<String> = emptyList(),
     val feedKey: String = "",
+    /** Publisher domain when known (the link itself is usually a Google News redirect). */
+    val sourceDomain: String? = null,
 )
 
 @Serializable
@@ -203,6 +205,6 @@ class NewsPipeline(
         }
 
         private fun Article.filtered(reason: FilterReason, details: List<String> = emptyList()) =
-            FilteredItem(title, sourceName, link, reason, details, feedKey)
+            FilteredItem(title, sourceName, link, reason, details, feedKey, sourceDomain)
     }
 }
