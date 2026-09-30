@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # publish the APK as a GitHub Release
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -34,10 +36,28 @@ jobs:
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug
 
+      - name: Name the APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk QuarterHour-debug.apk
+
       - uses: actions/upload-artifact@v4
         with:
           name: quarterhour-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: QuarterHour-debug.apk
+
+      # A release gives a direct, phone-friendly download link:
+      # https://github.com/<owner>/<repo>/releases/latest/download/QuarterHour-debug.apk
+      - name: Publish release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: QuarterHour debug build ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          body: |
+            Debug build of QuarterHour from `${{ github.ref_name }}` (${{ github.sha }}).
+            On your phone: download QuarterHour-debug.apk below, open it, and allow installing from this source when asked.
+          files: QuarterHour-debug.apk
 
       - uses: actions/upload-artifact@v4
         if: failure()
