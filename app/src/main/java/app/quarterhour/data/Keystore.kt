@@ -32,8 +32,9 @@ class KeystoreSigner(private val alias: String = "qh_budget_hmac") : Signer {
         return Base64.getEncoder().encodeToString(mac.doFinal(payload.toByteArray()))
     }
 
+    /** A Keystore failure counts as "can't verify", i.e. a used-up day, never a crash. */
     override fun verify(payload: String, signature: String): Boolean =
-        MessageDigest.isEqual(sign(payload).toByteArray(), signature.toByteArray())
+        runCatching { MessageDigest.isEqual(sign(payload).toByteArray(), signature.toByteArray()) }.getOrDefault(false)
 }
 
 /** AES-GCM with a Keystore key, for social account tokens. */

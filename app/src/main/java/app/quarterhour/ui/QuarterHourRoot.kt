@@ -97,8 +97,9 @@ fun QuarterHourRoot(
     // One-time two-minute warning.
     LaunchedEffect(budgetUi.showWarning) {
         if (budgetUi.showWarning) {
+            // Launched separately: warningShown() flips the key and would cancel this effect.
+            scope.launch { snackbar.showSnackbar("2 minutes left today") }
             budget.warningShown()
-            snackbar.showSnackbar("2 minutes left today")
         }
     }
     // Minutes used, for the profile's reading-habits section.

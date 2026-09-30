@@ -143,6 +143,7 @@ private fun MediaView(media: Media, modifier: Modifier) {
 }
 
 /** Muted, looping, tap-to-play video. Released as soon as it scrolls away. */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 private fun VideoPlayer(media: Media, modifier: Modifier) {
     val context = LocalContext.current

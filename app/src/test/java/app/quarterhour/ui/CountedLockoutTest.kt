@@ -1,5 +1,6 @@
 package app.quarterhour.ui
 
+import android.app.Application
 import androidx.compose.material3.Text
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -14,7 +15,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+// Plain Application: the composables under test don't need the app container or WorkManager.
+@Config(sdk = [34], application = Application::class)
 class CountedLockoutTest {
     @get:Rule val rule = createComposeRule()
 
