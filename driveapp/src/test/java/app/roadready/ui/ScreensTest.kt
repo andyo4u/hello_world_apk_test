@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import app.roadready.core.AppState
 import app.roadready.core.Drive
 import app.roadready.core.Driver
@@ -68,9 +69,10 @@ class ScreensTest {
             )
         }
         repeat(6) {
+            // The explanation card can push Next below the small test screen: scroll before clicking.
             rule.onNodeWithTag("next").assertIsNotEnabled()
-            rule.onNodeWithTag("choice0").performClick()
-            rule.onNodeWithTag("next").assertIsEnabled().performClick()
+            rule.onNodeWithTag("choice0").performScrollTo().performClick()
+            rule.onNodeWithTag("next").assertIsEnabled().performScrollTo().performClick()
         }
         rule.waitForIdle()
         rule.onNodeWithTag("score").assertExists()

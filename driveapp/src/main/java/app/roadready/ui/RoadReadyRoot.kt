@@ -105,7 +105,7 @@ fun RoadReadyRoot(store: StateStore, shareLog: (Driver) -> Unit) {
 
     Scaffold(
         topBar = {
-            if (onTab && driver != null) {
+            if (onTab) {
                 DriverTopBar(
                     drivers = state.drivers,
                     selected = driver,
