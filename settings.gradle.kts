@@ -29,6 +29,7 @@ dependencyResolutionManagement {
 rootProject.name = "QuarterHour"
 
 include(":core")
+include(":drivecore")
 
 // The Android module needs the Android SDK. Skip it on machines without one so
 // the pure-Kotlin core can still be built and tested (`-PcoreOnly` forces this).
@@ -37,4 +38,5 @@ val hasAndroidSdk = System.getenv("ANDROID_HOME") != null ||
     file("local.properties").let { it.exists() && it.readText().contains("sdk.dir") }
 if (hasAndroidSdk && !providers.gradleProperty("coreOnly").isPresent) {
     include(":app")
+    include(":driveapp")
 }

@@ -19,7 +19,7 @@ buildscript {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
         classpath("org.jetbrains.kotlin:kotlin-serialization:$kotlinVersion")
         classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlinVersion")
-        if (findProject(":app") != null) {
+        if (findProject(":app") != null || findProject(":driveapp") != null) {
             classpath("com.android.tools.build:gradle:$agpVersion")
         }
     }
