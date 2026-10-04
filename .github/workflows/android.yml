@@ -28,21 +28,28 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Core unit tests
-        run: ./gradlew :core:test
+        run: ./gradlew :core:test :drivecore:test
 
       - name: App unit tests (Robolectric)
-        run: ./gradlew :app:testDebugUnitTest
+        run: ./gradlew :app:testDebugUnitTest :driveapp:testDebugUnitTest
 
-      - name: Build debug APK
-        run: ./gradlew :app:assembleDebug
+      - name: Build debug APKs
+        run: ./gradlew :app:assembleDebug :driveapp:assembleDebug
 
-      - name: Name the APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk QuarterHour-debug.apk
+      - name: Name the APKs
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk QuarterHour-debug.apk
+          cp driveapp/build/outputs/apk/debug/driveapp-debug.apk RoadReady-debug.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: quarterhour-debug-apk
           path: QuarterHour-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: roadready-debug-apk
+          path: RoadReady-debug.apk
 
       # A release gives a direct, phone-friendly download link:
       # https://github.com/<owner>/<repo>/releases/latest/download/QuarterHour-debug.apk
@@ -51,13 +58,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: QuarterHour debug build ${{ github.run_number }}
+          name: Debug build ${{ github.run_number }}
           target_commitish: ${{ github.sha }}
           make_latest: true
           body: |
-            Debug build of QuarterHour from `${{ github.ref_name }}` (${{ github.sha }}).
-            On your phone: download QuarterHour-debug.apk below, open it, and allow installing from this source when asked.
-          files: QuarterHour-debug.apk
+            Debug builds of QuarterHour and RoadReady Oregon from `${{ github.ref_name }}` (${{ github.sha }}).
+            On your phone: download QuarterHour-debug.apk or RoadReady-debug.apk below, open it, and allow installing from this source when asked.
+          files: |
+            QuarterHour-debug.apk
+            RoadReady-debug.apk
 
       - uses: actions/upload-artifact@v4
         if: failure()
@@ -66,3 +75,5 @@ jobs:
           path: |
             core/build/reports/tests
             app/build/reports/tests
+            drivecore/build/reports/tests
+            driveapp/build/reports/tests

@@ -1,4 +1,10 @@
-# QuarterHour
+# QuarterHour (and RoadReady Oregon)
+
+This repo holds two Android apps:
+
+- **QuarterHour** — described below (`core/`, `app/`).
+- **RoadReady Oregon** — a driving-education app for families with several teens: a supervised-driving log with automatic night minutes, Oregon permit/provisional-license milestones and restrictions, rules of the road, DMV-style practice tests, and a behind-the-wheel skills checklist (`drivecore/`, `driveapp/`). See [`docs/ROADREADY.md`](docs/ROADREADY.md) for the feature list and roadmap.
+
 
 The best 15 minutes of your day: an Android app for clean news and social highlights, with a hard daily limit.
 
@@ -21,6 +27,8 @@ Why Bluesky and Mastodon rather than Instagram/Facebook: Meta closed personal-fe
 |---|---|
 | `core/` | Pure Kotlin/JVM, with all the logic: RSS parsing, Google News link resolution, reader extraction, paywall detection and free-source finder, clickbait/AI filters, interest model and ranker, profile writer, daily budget, Bluesky/Mastodon clients, social picker. Fully unit-tested. |
 | `app/` | Android (Jetpack Compose) UI and platform glue: file-backed stores, Keystore signing and encryption, the budget controller, the nightly WorkManager job, and the screens. |
+| `drivecore/` | RoadReady logic in pure Kotlin: Oregon GDL rules, sunrise/sunset night split, drive log export, rules of the road, question bank and quiz engine, skills curriculum, app state. Fully unit-tested. |
+| `driveapp/` | RoadReady Android (Jetpack Compose) app. |
 
 ## Build
 
@@ -30,9 +38,11 @@ Requires JDK 17+ and the Android SDK (compileSdk 35).
 ./gradlew :core:test              # logic tests, no Android SDK needed
 ./gradlew :app:testDebugUnitTest  # Robolectric UI tests
 ./gradlew :app:assembleDebug      # APK in app/build/outputs/apk/debug/
+./gradlew :drivecore:test         # RoadReady logic tests
+./gradlew :driveapp:assembleDebug # RoadReady APK in driveapp/build/outputs/apk/debug/
 ```
 
-Without an Android SDK, only `:core` is included in the build (see `settings.gradle.kts`). GitHub Actions (`.github/workflows/android.yml`) runs all tests and uploads the debug APK as a build artifact.
+Without an Android SDK, only `:core` and `:drivecore` are included in the build (see `settings.gradle.kts`). GitHub Actions (`.github/workflows/android.yml`) runs all tests and uploads both debug APKs as build artifacts.
 
 ## Known limitations
 
