@@ -10,3 +10,4 @@ captures/
 frontier_sim/runs/
 __pycache__/
 .pytest_cache/
+frontier_sim/*.log
