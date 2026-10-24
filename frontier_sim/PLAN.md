@@ -103,7 +103,7 @@ Divergence (non-finite loss) stops the run and is recorded.
 
 **Phase 0: scaffold (done in this commit)**
 - Configurable frontier-style transformer, synthetic task suite, training loop, sweep runner,
-  report generator, 29 unit tests (shapes, causality for every variant, sliding-window reach, MoE
+  report generator, 30 unit tests (shapes, causality for every variant, sliding-window reach, MoE
   param accounting, task masking, config validation, loss decreases).
 
 **Phase 1: calibrate the baseline (≈1 day of CPU or 1 GPU-hour)**
@@ -172,6 +172,43 @@ On one GPU, each of these drops to minutes; set `train.device` to `cuda` (bf16 i
 The tasks span solved, phase-change, stuck-on-a-shortcut and memorize-then-generalize behavior. That
 spread is what an idea testbed needs. `multihop` is the most informative open target. Ideas that help
 composition (depth, data mix, chain-of-thought tokens) should move it off 0.25.
+
+### First ablation sweep (`ablations.json`, 3 seeds × 6 variants, 2,000 steps)
+
+Held-out accuracy per seed (seed 0 / 1 / 2). "Jump" is the first eval step with `assoc_recall` ≥ 0.9.
+
+| Variant | `assoc_recall` | `multihop` | Jump |
+|---|---|---|---|
+| baseline | 1.00 / 0.16 / 0.16 | 0.23 / 0.24 / 0.23 | 500 / – / – |
+| gpt2_style | 0.14 / 0.15 / 0.14 | 0.23 / 0.23 / 0.23 | – / – / – |
+| no_qk_norm | 0.14 / 0.14 / 0.14 | 0.22 / 0.23 / 0.23 | – / – / – |
+| mqa | 1.00 / 0.16 / 0.16 | 0.50 / 0.23 / 0.24 | 1250 / – / – |
+| sliding_window_32 | 0.95 / 0.15 / 0.15 | 0.80 / 0.23 / 0.23 | 500 / – / – |
+| moe4_top2_matched | 1.00 / 1.00 / 0.16 | 0.51 / 0.77 / 0.24 | 250 / 250 / – |
+
+`copy` is 1.00 everywhere. `modadd` stays at chance (≈0.02, which is 1/53) everywhere except
+baseline seed 0, so 2,000 steps is too short for it.
+
+What this tells us:
+
+1. **Outcomes are bimodal.** Each run either goes through the induction-head phase change
+   (`assoc_recall` → 1.0) or stays on a plateau (≈0.15). Mean ± std hides this, so `report.md` now
+   also shows "k/n seeds solved". The seed-0 baseline in the previous section was a lucky seed: the
+   baseline solves the task in 1 of 3 seeds.
+2. **Multi-hop builds on retrieval.** `multihop` rises above the 0.25 shortcut only in runs that
+   already solved `assoc_recall`. Composition seems to need the retrieval circuit first, which fits
+   the curriculum view of capability onset.
+3. **Suggestive, not significant:** MoE at matched compute solved 2/3 and jumped earliest (step
+   250). GPT-2 recipe and no-QK-norm solved 0/3. With n = 3 and a baseline at 1/3, none of these
+   differences pass the 2σ rule.
+4. **The main problem is the protocol.** Comparing variants near a coin-flip phase transition needs
+   either many seeds (≥ 10 per arm, with "fraction solved" and "step of jump" as the metrics) or a
+   baseline that reliably crosses the transition (more steps or a tuned LR), so that the
+   comparison is about *how fast* and *how well*.
+
+Next steps, in order: (a) make the baseline reliable: steps × 2, then a 3-point LR sweep, choosing
+the cheapest setting that solves `assoc_recall` in ≥ 9/10 seeds; (b) rerun the ablations with 10 seeds
+and "time to solve" as the primary metric; (c) give `modadd` its own longer run for grokking.
 
 ## 9. Risks and limitations
 

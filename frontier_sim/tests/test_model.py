@@ -122,3 +122,11 @@ def test_mixture_components():
     t = build_task({"name": "mixture", "components": {
         "a": {"task": "multihop", "hops": 1}, "b": {"task": "multihop", "hops": 3}, "c": {"task": "copy", "weight": 0}}})
     assert set(t.components()) == {"a", "b"}
+
+
+def test_power_law_fit_needs_a_size_range():
+    from frontier_sim.sweep import fit_power_law
+
+    assert fit_power_law([(700_000, 2.0), (705_000, 1.9), (740_000, 1.8)]) is None
+    a, b, r2 = fit_power_law([(1e5, 3.0 * 1e5 ** -0.1), (1e6, 3.0 * 1e6 ** -0.1), (1e7, 3.0 * 1e7 ** -0.1)])
+    assert abs(b - 0.1) < 1e-6 and r2 > 0.999

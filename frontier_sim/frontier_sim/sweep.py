@@ -25,6 +25,9 @@ from pathlib import Path
 from . import config as config_mod
 from .train import train
 
+SOLVED_ACC = 0.9  # accuracy counted as "this seed solved the task" in reports
+MIN_SIZE_RATIO = 2.0  # fit a scaling law only when variant sizes span at least this ratio
+
 
 def run_sweep(spec_path: str | Path, out_root: str | Path, only: list[str] | None = None,
               verbose: bool = False) -> Path:
@@ -76,7 +79,11 @@ def compare(sweep_dir: str | Path, metric_filter: str = "eval/") -> str:
         cells = [variant, str(len(runs)), f"{active:,}", f"{pflops:.3f}"]
         for m in metrics:
             vals = [r["final"][m] for r in runs if m in r["final"]]
-            cells.append(_mean_std(vals) if vals else "-")
+            cell = _mean_std(vals) if vals else "-"
+            if vals and m.endswith("/acc") and len(vals) > 1:
+                # Capability onsets are often bimodal across seeds; show how many seeds got there.
+                cell += f" ({sum(v >= SOLVED_ACC for v in vals)}/{len(vals)} solved)"
+            cells.append(cell)
         lines.append("| " + " | ".join(cells) + " |")
         losses = [r["final"][k] for r in runs for k in r["final"] if k.startswith("eval/") and k.endswith("/loss")]
         if losses:
@@ -86,15 +93,16 @@ def compare(sweep_dir: str | Path, metric_filter: str = "eval/") -> str:
     fit = fit_power_law(scaling)
     if fit:
         text += (f"\n\nPower-law fit over variants (mean eval loss vs active params): "
-                 f"loss ≈ {fit[0]:.3g} · N^-{fit[1]:.3f}  (R² = {fit[2]:.3f})")
+                 f"loss ≈ {fit[0]:.3g} · N^({-fit[1]:.3f})  (R² = {fit[2]:.3f})")
     (sweep_dir / "report.md").write_text(text + "\n")
     return text
 
 
 def fit_power_law(points: list[tuple[float, float]]) -> tuple[float, float, float] | None:
-    """Least squares in log-log space. Only meaningful when variants differ in size."""
+    """Least squares in log-log space; None unless the variants span a real range of sizes."""
     pts = [(math.log(n), math.log(l)) for n, l in points if n > 0 and l > 0]
-    if len({x for x, _ in pts}) < 3:
+    xs = [x for x, _ in pts]
+    if len(set(xs)) < 3 or max(xs) - min(xs) < math.log(MIN_SIZE_RATIO):
         return None
     mx = statistics.mean(x for x, _ in pts)
     my = statistics.mean(y for _, y in pts)

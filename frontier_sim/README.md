@@ -11,7 +11,7 @@ The research plan (goals, protocol, roadmap, experiment queue) is in **[PLAN.md]
 ```bash
 cd frontier_sim
 pip install -r requirements.txt     # CPU-only torch: add --index-url https://download.pytorch.org/whl/cpu
-python -m pytest -q tests           # 29 tests, about 1 minute on CPU
+python -m pytest -q tests           # 30 tests, about 1 minute on CPU
 ```
 
 ## Use
