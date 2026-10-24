@@ -1,7 +1,7 @@
 """Command line entry point.
 
   python -m frontier_sim run experiments/baseline.json [--set key=value ...] [--out DIR]
-  python -m frontier_sim sweep experiments/ablations.json [--only v1 v2] [--out DIR]
+  python -m frontier_sim sweep experiments/ablations.json [--only v1 v2] [--out DIR] [-j 4]
   python -m frontier_sim compare runs/ablations
   python -m frontier_sim show experiments/baseline.json [--set ...]   # params/FLOPs, no training
 """
@@ -29,6 +29,7 @@ def main() -> None:
     s.add_argument("--only", nargs="*", default=None)
     s.add_argument("--out", default="runs")
     s.add_argument("-v", "--verbose", action="store_true")
+    s.add_argument("-j", "--workers", type=int, default=1, help="parallel single-threaded runs")
 
     c = sub.add_parser("compare", help="(re)build report.md for a sweep directory")
     c.add_argument("sweep_dir")
@@ -46,7 +47,7 @@ def main() -> None:
     elif args.cmd == "sweep":
         from .sweep import run_sweep
 
-        run_sweep(args.spec, args.out, args.only, args.verbose)
+        run_sweep(args.spec, args.out, args.only, args.verbose, args.workers)
     elif args.cmd == "compare":
         from .sweep import compare
 

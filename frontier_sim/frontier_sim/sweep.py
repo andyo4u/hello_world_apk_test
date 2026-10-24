@@ -23,20 +23,34 @@ import statistics
 from pathlib import Path
 
 from . import config as config_mod
-from .train import train
+from .train import SOLVED_ACC, train
 
-SOLVED_ACC = 0.9  # accuracy counted as "this seed solved the task" in reports
 MIN_SIZE_RATIO = 2.0  # fit a scaling law only when variant sizes span at least this ratio
 
 
+def _run_one(data: dict, run_dir: str, verbose: bool, threads: int | None) -> str:
+    if threads:
+        import torch
+
+        torch.set_num_threads(threads)
+    train(config_mod.from_dict(data), run_dir, verbose=verbose)
+    return data["name"]
+
+
 def run_sweep(spec_path: str | Path, out_root: str | Path, only: list[str] | None = None,
-              verbose: bool = False) -> Path:
+              verbose: bool = False, workers: int = 1) -> Path:
+    """Train every variant x seed not already finished, then write report.md.
+
+    workers > 1 runs that many single-threaded trainings in parallel; for small models
+    this gets more done per second than one multi-threaded run.
+    """
     spec_path = Path(spec_path)
     spec = config_mod.load_dict(spec_path)
     base = spec["base"]
     base = config_mod.load_dict(spec_path.parent / base) if isinstance(base, str) else base
     base = config_mod.apply_overrides(base, spec.get("common", {}))
     out = Path(out_root) / spec.get("name", spec_path.stem)
+    jobs = []
     for variant, overrides in spec["variants"].items():
         if only and variant not in only:
             continue
@@ -47,8 +61,21 @@ def run_sweep(spec_path: str | Path, out_root: str | Path, only: list[str] | Non
                 continue
             data = config_mod.apply_overrides(base, {**overrides, "train.seed": seed})
             data["name"] = f"{variant}/seed{seed}"
-            print(f"=== {variant} seed {seed}")
-            train(config_mod.from_dict(data), run_dir, verbose=verbose)
+            config_mod.from_dict(data)  # fail on a bad variant before any training starts
+            jobs.append((data, str(run_dir)))
+
+    if workers <= 1:
+        for data, run_dir in jobs:
+            print(f"=== {data['name']}")
+            _run_one(data, run_dir, verbose, None)
+    else:
+        import multiprocessing as mp
+        from concurrent.futures import ProcessPoolExecutor, as_completed
+
+        with ProcessPoolExecutor(workers, mp_context=mp.get_context("spawn")) as pool:
+            futures = [pool.submit(_run_one, data, run_dir, False, 1) for data, run_dir in jobs]
+            for i, fut in enumerate(as_completed(futures), 1):
+                print(f"=== done {fut.result()} ({i}/{len(jobs)})", flush=True)
     report = compare(out)
     print(report)
     return out
@@ -82,7 +109,9 @@ def compare(sweep_dir: str | Path, metric_filter: str = "eval/") -> str:
             cell = _mean_std(vals) if vals else "-"
             if vals and m.endswith("/acc") and len(vals) > 1:
                 # Capability onsets are often bimodal across seeds; show how many seeds got there.
-                cell += f" ({sum(v >= SOLVED_ACC for v in vals)}/{len(vals)} solved)"
+                cell += f" ({sum(v >= SOLVED_ACC for v in vals)}/{len(vals)} solved"
+                steps = [r["solved_step"][m] for r in runs if m in r.get("solved_step", {})]
+                cell += f", median step {statistics.median(steps):g})" if steps else ")"
             cells.append(cell)
         lines.append("| " + " | ".join(cells) + " |")
         losses = [r["final"][k] for r in runs for k in r["final"] if k.startswith("eval/") and k.endswith("/loss")]

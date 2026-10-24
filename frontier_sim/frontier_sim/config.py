@@ -85,6 +85,9 @@ class TrainConfig:
     device: str = "auto"  # "auto" | "cpu" | "cuda" | "mps"
     compile: bool = False
     save_checkpoint: bool = True
+    # Stop early once every listed eval metric reaches its threshold, e.g.
+    # {"eval/assoc_recall/acc": 0.9}. Useful when measuring time-to-capability.
+    stop_when: dict[str, float] | None = None
 
 
 @dataclass

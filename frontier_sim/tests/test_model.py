@@ -130,3 +130,44 @@ def test_power_law_fit_needs_a_size_range():
     assert fit_power_law([(700_000, 2.0), (705_000, 1.9), (740_000, 1.8)]) is None
     a, b, r2 = fit_power_law([(1e5, 3.0 * 1e5 ** -0.1), (1e6, 3.0 * 1e6 ** -0.1), (1e7, 3.0 * 1e7 ** -0.1)])
     assert abs(b - 0.1) < 1e-6 and r2 > 0.999
+
+
+def test_stop_when_and_solved_step(tmp_path):
+    cfg = config_mod.from_dict({
+        "model": {**SMALL, "seq_len": 64},
+        "train": {"steps": 400, "batch_size": 16, "lr": 3e-3, "warmup_steps": 5, "eval_every": 20,
+                  "eval_batches": 2, "log_every": 20, "save_checkpoint": False,
+                  "stop_when": {"eval/copy/acc": 0.9}},
+        "task": {"name": "copy", "length": 4, "n_symbols": 4},
+    })
+    s = train(cfg, tmp_path, verbose=False)
+    assert s["stopped_early"] and s["steps"] < 400
+    assert s["solved_step"]["eval/copy/acc"] == s["steps"]
+
+
+def test_stop_when_rejects_unknown_metric(tmp_path):
+    cfg = config_mod.from_dict({
+        "model": SMALL,
+        "train": {"steps": 2, "batch_size": 2, "eval_every": 1, "eval_batches": 1,
+                  "save_checkpoint": False, "stop_when": {"eval/cpy/acc": 0.9}},
+        "task": {"name": "copy", "length": 4},
+    })
+    with pytest.raises(ValueError, match="unknown metrics"):
+        train(cfg, tmp_path, verbose=False)
+
+
+def test_parallel_sweep(tmp_path):
+    import json
+
+    from frontier_sim.sweep import run_sweep
+
+    spec = {"name": "t", "seeds": [0, 1],
+            "base": {"model": SMALL, "task": {"name": "copy", "length": 4},
+                     "train": {"steps": 4, "batch_size": 2, "eval_every": 4, "eval_batches": 1,
+                               "log_every": 4, "save_checkpoint": False}},
+            "variants": {"a": {}, "b": {"model.mlp": "gelu"}}}
+    path = tmp_path / "spec.json"
+    path.write_text(json.dumps(spec))
+    out = run_sweep(path, tmp_path / "runs", workers=2)
+    assert len(list(out.glob("*/seed*/summary.json"))) == 4
+    assert "solved" in (out / "report.md").read_text()

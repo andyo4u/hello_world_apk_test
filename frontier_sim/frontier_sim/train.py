@@ -22,6 +22,7 @@ from .model import IGNORE_INDEX, Transformer
 from .tasks import Task, build_task, make_batch
 
 EVAL_SEED = 1234  # fixed so every run is scored on identical eval batches
+SOLVED_ACC = 0.9  # an accuracy at or above this counts as "capability acquired"
 
 
 def pick_device(name: str) -> torch.device:
@@ -102,6 +103,8 @@ def train(cfg: ExperimentConfig, out_dir: str | Path, verbose: bool = True) -> d
     log = open(out / "metrics.jsonl", "w")
     t0 = time.time()
     last_eval: dict[str, float] = {}
+    solved_step: dict[str, int] = {}  # first eval step each eval/*/acc metric reached SOLVED_ACC
+    stopped_early = False
     for step in range(tc.steps):
         lr = lr_at(step, tc)
         for g in opt.param_groups:
@@ -133,12 +136,23 @@ def train(cfg: ExperimentConfig, out_dir: str | Path, verbose: bool = True) -> d
                 print(f"step {done:6d} loss {rec['loss']:.4f} lr {lr:.2e} gnorm {grad_norm:.2f}")
         if done % tc.eval_every == 0 or done == tc.steps:
             last_eval = evaluate(model, task, tc.batch_size, tc.eval_batches, device)
+            for k, v in last_eval.items():
+                if k.startswith("eval/") and k.endswith("/acc") and v >= SOLVED_ACC:
+                    solved_step.setdefault(k, done)
             log.write(json.dumps({"step": done, "eval": last_eval}) + "\n")
             log.flush()
             if verbose:
                 accs = {k.split("/")[1]: round(v, 3) for k, v in last_eval.items()
                         if k.startswith("eval/") and k.endswith("/acc")}
                 print(f"  eval acc {accs}")
+            missing = set(tc.stop_when or ()) - set(last_eval)
+            if missing:
+                raise ValueError(f"stop_when names unknown metrics {sorted(missing)}; have {sorted(last_eval)}")
+            if tc.stop_when and all(last_eval.get(k, float("-inf")) >= v for k, v in tc.stop_when.items()):
+                stopped_early = True
+                if verbose:
+                    print(f"[{cfg.name}] stop_when reached at step {done}")
+                break
     log.close()
 
     summary = {
@@ -149,6 +163,8 @@ def train(cfg: ExperimentConfig, out_dir: str | Path, verbose: bool = True) -> d
         "train_flops": flops_per_token * done * tokens_per_step,
         "tokens": done * tokens_per_step,
         "wall_time_s": round(time.time() - t0, 2),
+        "stopped_early": stopped_early,
+        "solved_step": solved_step,
         "final": last_eval,
     }
     (out / "summary.json").write_text(json.dumps(summary, indent=2))

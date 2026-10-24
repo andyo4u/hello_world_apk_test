@@ -1,0 +1,18 @@
+{
+  "name": "calibration",
+  "base": "baseline.json",
+  "seeds": [0, 1, 2, 3, 4, 5],
+  "common": {
+    "train.steps": 4000,
+    "train.eval_every": 125,
+    "train.eval_batches": 4,
+    "train.log_every": 125,
+    "train.save_checkpoint": false,
+    "train.stop_when": {"eval/assoc_recall/acc": 0.9}
+  },
+  "variants": {
+    "lr1.5e-3": {"train.lr": 0.0015},
+    "lr3e-3": {"train.lr": 0.003},
+    "lr6e-3": {"train.lr": 0.006}
+  }
+}
