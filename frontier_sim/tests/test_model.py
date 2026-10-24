@@ -104,6 +104,9 @@ def test_modadd_splits_disjoint():
     t = ModAdd(p=11)
     assert not set(t.pairs["train"]) & set(t.pairs["eval"])
     assert len(t.pairs["train"]) + len(t.pairs["eval"]) == 121
+    # mirrored pairs share a split, so commutativity can't leak eval answers
+    train = set(t.pairs["train"])
+    assert all((b, a) not in train for a, b in t.pairs["eval"])
 
 
 def test_training_reduces_loss(tmp_path):

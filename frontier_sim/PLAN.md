@@ -167,7 +167,7 @@ On one GPU, each of these drops to minutes; set `train.device` to `cuda` (bf16 i
 | `copy` | 1.00 | 1.00 | Solved by step 250 |
 | `assoc_recall` | 1.00 | 1.00 | Sharp jump between steps 250 and 500 (induction-head phase change) |
 | `multihop` | 0.24 | 0.23 | Stuck at the shortcut level: picking one of the 4 chain endpoints at random gives 0.25. The model has learned *where* answers come from but not how to compose two hops. |
-| `modadd` | 0.78 | 0.16 (rising) | Memorizing the training pairs; held-out accuracy starting to climb late (possible onset of grokking) |
+| `modadd` | 0.78 | 0.16 (rising) | Memorizing the training pairs; held-out accuracy starting to climb late. *Later shown to be commutativity leakage, not grokking; see the 10-seed section.* |
 
 The tasks span solved, phase-change, stuck-on-a-shortcut and memorize-then-generalize behavior. That
 spread is what an idea testbed needs. `multihop` is the most informative open target. Ideas that help
@@ -195,7 +195,7 @@ What this tells us:
    (`assoc_recall` → 1.0) or stays on a plateau (≈0.15). Mean ± std hides this, so `report.md` now
    also shows "k/n seeds solved". The seed-0 baseline in the previous section was a lucky seed: the
    baseline solves the task in 1 of 3 seeds.
-2. **Multi-hop builds on retrieval.** `multihop` rises above the 0.25 shortcut only in runs that
+2. **Multi-hop builds on retrieval** (revised in the 10-seed section: retrieval is needed but not sufficient). `multihop` rises above the 0.25 shortcut only in runs that
    already solved `assoc_recall`. Composition seems to need the retrieval circuit first, which fits
    the curriculum view of capability onset.
 3. **Suggestive, not significant:** MoE at matched compute solved 2/3 and jumped earliest (step
@@ -231,6 +231,47 @@ and "time to solve" as the primary metric; (c) give `modadd` its own longer run 
 4. Caveat: the LR was tuned for the baseline only. A variant that loses at this LR may just
    prefer a different one (protocol step 5). Any variant that looks better or worse should get
    its own 3-point LR check before we draw conclusions.
+
+### 10-seed ablations at the calibrated LR (`ablations.json`, 7.5e-4, 2,000 steps)
+
+| Variant | `assoc_recall` solved | p vs baseline (Fisher) | Median solve step | `multihop` > 0.3 |
+|---|---|---|---|---|
+| baseline | **10/10** | – | 625 | 1/10 |
+| mqa | 8/10 | 0.47 | 1,188 | 0/10 |
+| moe4_top2_matched | 7/10 | 0.21 | 625 | 2/10 |
+| sliding_window_32 | 2/10 | 7e-4 | 875 | 2/10 |
+| no_qk_norm | 1/10 | 1e-4 | 1,750 | 0/10 |
+| gpt2_style | 0/10 | 1e-5 | – | 0/10 |
+
+`copy` is solved by every run. Readings:
+
+1. **Calibration replicates.** The baseline solves `assoc_recall` in 10/10 seeds (it was 6/6 in calibration).
+2. **Removing QK-norm, or using the GPT-2 recipe, almost removes the phase change at this LR.**
+   This is the clearest result so far. It matches hypothesis #2 (QK-norm widens the range of stable
+   LRs), but the LR was tuned for the baseline. To separate "worse architecture" from "needs a lower
+   LR", these two variants need their own LR sweep.
+3. **Sliding window (32) hurts retrieval, as predicted (#5).** Queries sit up to 128 tokens after
+   the key/value pairs. A 32-token window can reach them only by relaying across layers, and
+   that relay rarely forms.
+4. **MQA and matched-compute MoE: no significant difference.** MQA solves later (median 1,188 vs 625).
+   The 3-seed result "MoE is best" from the high-LR sweep did not hold up; it was noise near a
+   coin-flip plateau.
+5. **Revised: retrieval is needed but not sufficient for `multihop`.** The baseline now solves
+   retrieval in every seed, yet `multihop` leaves the 0.25 shortcut in only 5 of 60 runs (≈0.5 when
+   it does). Composition is the open problem, as before.
+6. **Bug found in `modadd`: commutativity leakage.** Held-out accuracy clustered at exactly ≈0.50.
+   Probing a saved checkpoint showed 100% accuracy on held-out (a, b) when (b, a) was in the training
+   set, and 5% (chance ≈2%) otherwise. The model memorized the training pairs and learned only
+   a+b = b+a. The split now assigns unordered pairs {a, b} to one side, with a test for it. Every
+   earlier `modadd` held-out number (including "possible grokking") is void.
+
+Next steps:
+- (a) LR sweep for `no_qk_norm`, `gpt2_style` and `sliding_window_32` at {3.75e-4, 1.5e-4}, to test whether
+  their deficit is "needs a lower LR" or "can't do it".
+- (b) Rerun `modadd` with the fixed split in a longer single-task run (weight decay sweep) to look
+  for real grokking.
+- (c) Target `multihop`: depth-vs-width at fixed params (#8), a data mix that upweights it (#6), and
+  hops=1 as a curriculum step.
 
 ## 9. Risks and limitations
 

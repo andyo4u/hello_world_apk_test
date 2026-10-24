@@ -5,7 +5,7 @@ right answer, so small models give clean, low-noise signals:
 
   assoc_recall  in-context retrieval (key -> value lookup; the induction-head task)
   multihop      compositional reasoning (follow k facts a->b->c in context)
-  modadd        generalization vs memorization (held-out (a, b) pairs)
+  modadd        generalization vs memorization (held-out {a, b} pairs)
   copy          long-range exact copying (context-length stress)
   text          ordinary byte-level language modeling on any file you supply
   mixture       weighted blend of the above, like a pretraining data mix
@@ -106,10 +106,13 @@ class ModAdd(Task):
     def __init__(self, p: int = 53, train_frac: float = 0.5, split_seed: int = 0):
         self.p = p
         self.tokens_needed = FIRST + p
-        pairs = [(a, b) for a in range(p) for b in range(p)]
-        random.Random(split_seed).shuffle(pairs)
-        cut = int(train_frac * len(pairs))
-        self.pairs = {"train": pairs[:cut], "eval": pairs[cut:]}
+        # Split unordered pairs so (a, b) and (b, a) share a split. Otherwise half the eval set
+        # is answerable from commutativity alone and looks like generalization.
+        unordered = [(a, b) for a in range(p) for b in range(a, p)]
+        random.Random(split_seed).shuffle(unordered)
+        cut = int(train_frac * len(unordered))
+        both = lambda us: [q for a, b in us for q in ({(a, b), (b, a)})]
+        self.pairs = {"train": both(unordered[:cut]), "eval": both(unordered[cut:])}
 
     def sample_row(self, n, rng, split):
         pairs = self.pairs[split]
