@@ -1,0 +1,13 @@
+{
+  "name": "scaling",
+  "base": "baseline.json",
+  "seeds": [0],
+  "common": {"train.save_checkpoint": false},
+  "variants": {
+    "d64_l2":  {"model.d_model": 64,  "model.n_layers": 2, "model.n_heads": 2, "model.n_kv_heads": 1},
+    "d96_l3":  {"model.d_model": 96,  "model.n_layers": 3, "model.n_heads": 4, "model.n_kv_heads": 2},
+    "d128_l4": {},
+    "d192_l6": {"model.d_model": 192, "model.n_layers": 6, "model.n_heads": 6, "model.n_kv_heads": 2},
+    "d256_l8": {"model.d_model": 256, "model.n_layers": 8, "model.n_heads": 8, "model.n_kv_heads": 4}
+  }
+}

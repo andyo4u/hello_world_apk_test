@@ -1,0 +1,11 @@
+{
+  "name": "smoke",
+  "base": "baseline.json",
+  "seeds": [0, 1],
+  "common": {"train.steps": 60, "train.eval_every": 60, "train.eval_batches": 2,
+             "train.log_every": 20, "train.save_checkpoint": false},
+  "variants": {
+    "baseline": {},
+    "moe4_top2_matched": {"model.n_experts": 4, "model.moe_top_k": 2, "model.expert_d_ff": 176}
+  }
+}

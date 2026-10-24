@@ -7,3 +7,6 @@ local.properties
 captures/
 .kotlin/
 *.keystore
+frontier_sim/runs/
+__pycache__/
+.pytest_cache/

@@ -21,6 +21,7 @@ Why Bluesky and Mastodon rather than Instagram/Facebook: Meta closed personal-fe
 |---|---|
 | `core/` | Pure Kotlin/JVM, with all the logic: RSS parsing, Google News link resolution, reader extraction, paywall detection and free-source finder, clickbait/AI filters, interest model and ranker, profile writer, daily budget, Bluesky/Mastodon clients, social picker. Fully unit-tested. |
 | `app/` | Android (Jetpack Compose) UI and platform glue: file-backed stores, Keystore signing and encryption, the budget controller, the nightly WorkManager job, and the screens. |
+| `frontier_sim/` | Separate Python research project, unrelated to the app: a small, configurable simulator of a frontier language model for testing AI research ideas. See [`frontier_sim/README.md`](frontier_sim/README.md) and [`frontier_sim/PLAN.md`](frontier_sim/PLAN.md). |
 
 ## Build
 

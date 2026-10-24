@@ -1,0 +1,15 @@
+{
+  "name": "ablations",
+  "base": "baseline.json",
+  "seeds": [0, 1, 2],
+  "common": {"train.save_checkpoint": false},
+  "variants": {
+    "baseline": {},
+    "gpt2_style": {"model.mlp": "gelu", "model.norm": "layer", "model.pos": "learned",
+                   "model.qk_norm": false, "model.n_kv_heads": 4},
+    "no_qk_norm": {"model.qk_norm": false},
+    "mqa": {"model.n_kv_heads": 1},
+    "sliding_window_32": {"model.sliding_window": 32},
+    "moe4_top2_matched": {"model.n_experts": 4, "model.moe_top_k": 2, "model.expert_d_ff": 176}
+  }
+}

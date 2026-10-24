@@ -1,0 +1,31 @@
+{
+  "name": "baseline",
+  "model": {
+    "vocab_size": 256,
+    "seq_len": 128,
+    "d_model": 128,
+    "n_layers": 4,
+    "n_heads": 4,
+    "n_kv_heads": 2,
+    "mlp": "swiglu",
+    "norm": "rms",
+    "pos": "rope",
+    "qk_norm": true
+  },
+  "train": {
+    "steps": 2000,
+    "batch_size": 32,
+    "lr": 0.003,
+    "warmup_steps": 100,
+    "eval_every": 250
+  },
+  "task": {
+    "name": "mixture",
+    "components": {
+      "assoc_recall": {"weight": 1.0, "n_pairs": 8},
+      "multihop": {"weight": 1.0, "n_chains": 4, "hops": 2},
+      "modadd": {"weight": 1.0, "p": 53, "train_frac": 0.5},
+      "copy": {"weight": 1.0, "length": 16}
+    }
+  }
+}
