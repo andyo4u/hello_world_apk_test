@@ -210,6 +210,28 @@ Next steps, in order: (a) make the baseline reliable: steps × 2, then a 3-point
 the cheapest setting that solves `assoc_recall` in ≥ 9/10 seeds; (b) rerun the ablations with 10 seeds
 and "time to solve" as the primary metric; (c) give `modadd` its own longer run for grokking.
 
+### Baseline calibration (`calibration.json`, 6 seeds per LR, up to 4,000 steps, stop when solved)
+
+| Peak LR | Seeds solving `assoc_recall` | Median / slowest solve step |
+|---|---|---|
+| 6e-3 | 0/6 | – |
+| 3e-3 (old default) | 3/6 | 375 / 625 |
+| 1.5e-3 | 4/6 | 250 / 1125 |
+| **7.5e-4 (new default)** | **6/6** | 562 / 1375 |
+| 3.75e-4 | 6/6 | 562 / 2000 |
+
+1. **The plateau was mostly caused by a learning rate that was too high**, not by too few steps.
+   At high LR, every solving run solved by step ≈1,100, and runs still stuck then stayed stuck for
+   all 4,000 steps. The plateau is a trap, not slow progress. Seed 1, which failed in almost every
+   earlier run, solves at both low LRs.
+2. Lowering the LR gives a reliable phase change at almost no cost in speed: the median solve
+   step stays around 500. 7.5e-4 has the better worst case, so it is the new baseline LR.
+3. The 3-seed ablation table above was run at LR 3e-3 and is superseded. Its raw runs are kept in
+   `runs/ablations_lr3e-3/`. `ablations.json` now uses 10 seeds at the calibrated LR.
+4. Caveat: the LR was tuned for the baseline only. A variant that loses at this LR may just
+   prefer a different one (protocol step 5). Any variant that looks better or worse should get
+   its own 3-point LR check before we draw conclusions.
+
 ## 9. Risks and limitations
 
 - **Extrapolation risk.** A trick that helps a 1M-param model can hurt at 1B. Mitigation: scaling

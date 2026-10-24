@@ -1,15 +1,46 @@
 {
   "name": "ablations",
   "base": "baseline.json",
-  "seeds": [0, 1, 2],
-  "common": {"train.save_checkpoint": false},
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "common": {
+    "train.save_checkpoint": false,
+    "train.eval_every": 125,
+    "train.eval_batches": 4,
+    "train.log_every": 125
+  },
   "variants": {
     "baseline": {},
-    "gpt2_style": {"model.mlp": "gelu", "model.norm": "layer", "model.pos": "learned",
-                   "model.qk_norm": false, "model.n_kv_heads": 4},
-    "no_qk_norm": {"model.qk_norm": false},
-    "mqa": {"model.n_kv_heads": 1},
-    "sliding_window_32": {"model.sliding_window": 32},
-    "moe4_top2_matched": {"model.n_experts": 4, "model.moe_top_k": 2, "model.expert_d_ff": 176}
+    "gpt2_style": {
+      "model.mlp": "gelu",
+      "model.norm": "layer",
+      "model.pos": "learned",
+      "model.qk_norm": false,
+      "model.n_kv_heads": 4
+    },
+    "no_qk_norm": {
+      "model.qk_norm": false
+    },
+    "mqa": {
+      "model.n_kv_heads": 1
+    },
+    "sliding_window_32": {
+      "model.sliding_window": 32
+    },
+    "moe4_top2_matched": {
+      "model.n_experts": 4,
+      "model.moe_top_k": 2,
+      "model.expert_d_ff": 176
+    }
   }
 }
