@@ -160,6 +160,19 @@ Divergence (non-finite loss) stops the run and is recorded.
 
 On one GPU, each of these drops to minutes; set `train.device` to `cuda` (bf16 is automatic).
 
+### First baseline result (seed 0, 2,000 steps, 8.2M tokens)
+
+| Task | Train-split acc | Held-out acc | Reading |
+|---|---|---|---|
+| `copy` | 1.00 | 1.00 | Solved by step 250 |
+| `assoc_recall` | 1.00 | 1.00 | Sharp jump between steps 250 and 500 (induction-head phase change) |
+| `multihop` | 0.24 | 0.23 | Stuck at the shortcut level: picking one of the 4 chain endpoints at random gives 0.25. The model has learned *where* answers come from but not how to compose two hops. |
+| `modadd` | 0.78 | 0.16 (rising) | Memorizing the training pairs; held-out accuracy starting to climb late (possible onset of grokking) |
+
+The tasks span solved, phase-change, stuck-on-a-shortcut and memorize-then-generalize behavior. That
+spread is what an idea testbed needs. `multihop` is the most informative open target. Ideas that help
+composition (depth, data mix, chain-of-thought tokens) should move it off 0.25.
+
 ## 9. Risks and limitations
 
 - **Extrapolation risk.** A trick that helps a 1M-param model can hurt at 1B. Mitigation: scaling
